@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sneaker Inventory Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f9;
+        }
+        /* Custom scrollbar for aesthetics */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 3px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-extrabold text-gray-800 mb-6 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" />
+            </svg>
+            Sneaker Stock Tracker
+        </h1>
+
+        <!-- Add New Sneaker Form -->
+        <div id="add-sneaker-form" class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Add New Item</h2>
+            <form id="sneaker-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="text" id="sneaker-brand" placeholder="Brand (e.g., Nike)" required 
+                       class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <input type="text" id="sneaker-model" placeholder="Model (e.g., Air Jordan 1)" required 
+                       class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <input type="number" id="sneaker-size" placeholder="Size (US)" step="0.5" required 
+                       class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <input type="number" id="sneaker-stock" placeholder="Stock Quantity" required 
+                       class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <input type="text" id="sneaker-colorway" placeholder="Colorway (e.g., Chicago)" required 
+                       class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <button type="submit" 
+                        class="col-span-1 md:col-span-1 p-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition duration-150 ease-in-out shadow-md">
+                    Add Sneaker
+                </button>
+            </form>
+        </div>
+
+        <!-- User Info Display -->
+        <div id="user-info" class="bg-indigo-50 p-4 rounded-xl shadow-inner mb-8 text-sm text-gray-700">
+            <p><strong>Authenticated User ID:</strong> <span id="user-id-display" class="font-mono text-xs bg-indigo-100 p-1 rounded">Loading...</span></p>
+            <p class="mt-1">
+                This inventory is stored publicly under the app ID: 
+                <span id="app-id-display" class="font-mono text-xs bg-indigo-100 p-1 rounded">Loading...</span>.
+                Anyone with this link can view and modify it.
+            </p>
+        </div>
+
+
+        <!-- Sneaker List Area -->
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">Current Inventory</h2>
+            
+            <!-- Loading State Indicator -->
+            <div id="loading-state" class="text-center py-10 transition duration-500 ease-in-out">
+                <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-gray-500">Loading inventory data...</p>
+            </div>
+
+            <!-- List Container -->
+            <div id="sneaker-list-container" class="space-y-4">
+                <!-- Sneaker items will be injected here -->
+            </div>
+
+            <!-- No Results Message -->
+            <div id="no-results" class="hidden text-center py-10 text-gray-500">
+                <p>No sneakers found in the inventory. Add one above!</p>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Modal for Error/Confirmation Messages (replaces alert/confirm) -->
+    <div id="app-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+            <h3 id="modal-title" class="text-lg font-bold mb-3 text-gray-800"></h3>
+            <p id="modal-message" class="text-sm text-gray-600 mb-4"></p>
+            <div id="modal-actions" class="flex justify-end space-x-2">
+                <button id="modal-confirm" class="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition hidden">Confirm</button>
+                <button id="modal-close" class="px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            onSnapshot, 
+            query, 
+            addDoc, 
+            doc, 
+            updateDoc, 
+            deleteDoc, 
+            setLogLevel 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- GLOBAL SETUP & FIREBASE INITIALIZATION ---
+
+        // Global variables provided by the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db = null;
+        let auth = null;
+        let currentUserId = null;
+        let isAuthReady = false;
+
+        // Set Firebase debug logging
+        setLogLevel('debug');
+        console.log("App ID:", appId);
+
+        // Utility to show custom modal (replaces alert/confirm)
+        function showModal(title, message, isConfirmation = false) {
+            const modal = document.getElementById('app-modal');
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+
+            const confirmBtn = document.getElementById('modal-confirm');
+            const closeBtn = document.getElementById('modal-close');
+            
+            return new Promise((resolve) => {
+                // Reset listeners and display
+                confirmBtn.onclick = null;
+                closeBtn.onclick = null;
+                confirmBtn.classList.add('hidden');
+
+                if (isConfirmation) {
+                    confirmBtn.classList.remove('hidden');
+                    confirmBtn.onclick = () => {
+                        modal.classList.add('hidden');
+                        resolve(true);
+                    };
+                    closeBtn.onclick = () => {
+                        modal.classList.add('hidden');
+                        resolve(false);
+                    };
+                } else {
+                    closeBtn.onclick = () => {
+                        modal.classList.add('hidden');
+                        resolve(true); // Resolve true for simple alerts
+                    };
+                }
+
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            });
+        }
+        
+        // --- DATA PATH & REFERENCES ---
+        
+        /**
+         * Gets the Firestore collection reference for public data.
+         * The path is /artifacts/{appId}/public/data/sneakers
+         */
+        function getSneakersCollectionRef() {
+            if (!db) return null;
+            const path = `/artifacts/${appId}/public/data/sneakers`;
+            return collection(db, path);
+        }
+
+        // --- AUTHENTICATION HANDLER ---
+
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Set up authentication state listener
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        currentUserId = user.uid;
+                        document.getElementById('user-id-display').textContent = currentUserId;
+                        document.getElementById('app-id-display').textContent = appId;
+                    } else {
+                        // This should ideally not happen after sign-in, but as a fallback
+                        document.getElementById('user-id-display').textContent = 'Guest (Sign-in Failed)';
+                        currentUserId = null;
+                    }
+                    isAuthReady = true;
+                    // Start listening for data once auth is ready
+                    setupSnapshotListener();
+                });
+
+                // Attempt custom token sign-in or anonymous sign-in
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    // Fallback to anonymous sign-in if no token is provided
+                    await signInAnonymously(auth);
+                }
+
+            } catch (error) {
+                console.error("Firebase initialization or sign-in failed:", error);
+                showModal("Initialization Error", `Failed to connect to Firebase: ${error.message}`);
+                // Ensure loading state is handled even on error
+                const loadingState = document.getElementById('loading-state');
+                if (loadingState) {
+                    loadingState.textContent = 'Failed to load data.';
+                    loadingState.classList.remove('animate-spin');
+                }
+            }
+        }
+
+
+        // --- UI RENDERING FUNCTIONS ---
+
+        /**
+         * Renders the list of sneakers into the UI.
+         * THIS IS WHERE THE NULL CHECK FIX IS APPLIED (approx line 200 in this script).
+         * @param {Array<Object>} sneakers - Array of sneaker objects from Firestore.
+         */
+        function renderSneakerList(sneakers) {
+            const listContainer = document.getElementById('sneaker-list-container');
+            
+            // --- FIX FOR Cannot read properties of null (reading 'style') ---
+            // The reported error happens when trying to access a property (like .style or .classList)
+            // on an element that does not exist (is null). We check for it here.
+            const loadingState = document.getElementById('loading-state');
+            if (loadingState) {
+                // Ensure loading state is hidden only if the element exists
+                loadingState.classList.add('hidden');
+                loadingState.style.opacity = '0';
+                loadingState.style.display = 'none'; // This line or similar was likely causing the error
+            }
+            // ------------------------------------------------------------------
+
+            if (!listContainer) {
+                console.error("Sneaker list container not found.");
+                return;
+            }
+
+            if (sneakers.length === 0) {
+                listContainer.innerHTML = '';
+                document.getElementById('no-results').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('no-results').classList.add('hidden');
+            listContainer.innerHTML = sneakers.map(sneaker => `
+                <div id="sneaker-${sneaker.id}" class="flex flex-col md:flex-row items-start md:items-center bg-gray-50 p-4 rounded-xl shadow-sm border-l-4 border-blue-500 hover:shadow-md transition duration-150">
+                    
+                    <!-- Sneaker Details -->
+                    <div class="flex-grow mr-4 mb-3 md:mb-0">
+                        <p class="text-xl font-bold text-gray-800">${sneaker.brand} ${sneaker.model}</p>
+                        <p class="text-sm text-gray-600">Colorway: ${sneaker.colorway}</p>
+                        <p class="text-sm text-gray-600">Size: US ${sneaker.size}</p>
+                    </div>
+
+                    <!-- Stock Counter & Controls -->
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg font-semibold text-gray-900 w-12 text-right">
+                            Stock: <span id="stock-count-${sneaker.id}">${sneaker.stock}</span>
+                        </span>
+                        
+                        <button data-id="${sneaker.id}" data-action="decrement"
+                                class="stock-btn p-2 text-red-600 border border-red-600 rounded-full hover:bg-red-50 transition duration-150">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+
+                        <button data-id="${sneaker.id}" data-action="increment"
+                                class="stock-btn p-2 text-green-600 border border-green-600 rounded-full hover:bg-green-50 transition duration-150">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        
+                        <button data-id="${sneaker.id}" data-action="delete"
+                                class="delete-btn p-2 ml-4 text-gray-400 rounded-full hover:text-red-500 transition duration-150" title="Delete Item">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add event listeners after rendering
+            attachListEventListeners();
+        }
+
+        /**
+         * Attaches listeners to the dynamically created increment/decrement/delete buttons.
+         */
+        function attachListEventListeners() {
+            document.querySelectorAll('.stock-btn').forEach(button => {
+                button.onclick = (event) => {
+                    event.preventDefault();
+                    const id = button.dataset.id;
+                    const action = button.dataset.action;
+                    updateSneakerStock(id, action === 'increment' ? 1 : -1);
+                };
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.onclick = async (event) => {
+                    event.preventDefault();
+                    const id = button.dataset.id;
+                    const confirmation = await showModal(
+                        "Confirm Deletion", 
+                        "Are you sure you want to delete this sneaker from the inventory?",
+                        true
+                    );
+                    if (confirmation) {
+                        deleteSneaker(id);
+                    }
+                };
+            });
+        }
+
+
+        // --- FIREBASE INTERACTION FUNCTIONS ---
+
+        /**
+         * Sets up the real-time listener for the sneakers collection.
+         */
+        function setupSnapshotListener() {
+            if (!isAuthReady || !db) {
+                console.warn("Firestore not ready. Skipping snapshot listener setup.");
+                return;
+            }
+
+            const q = query(getSneakersCollectionRef());
+
+            onSnapshot(q, (snapshot) => {
+                const sneakers = [];
+                snapshot.forEach((doc) => {
+                    sneakers.push({ id: doc.id, ...doc.data() });
+                });
+                console.log("New data snapshot received. Total items:", sneakers.length);
+                // Sort by brand then model for consistent rendering
+                sneakers.sort((a, b) => {
+                    if (a.brand < b.brand) return -1;
+                    if (a.brand > b.brand) return 1;
+                    if (a.model < b.model) return -1;
+                    if (a.model > b.model) return 1;
+                    return 0;
+                });
+                renderSneakerList(sneakers);
+            }, (error) => {
+                console.error("Error listening to Firestore collection:", error);
+                showModal("Data Error", `Failed to load real-time data: ${error.message}`);
+            });
+        }
+
+        /**
+         * Handles adding a new sneaker to the collection.
+         */
+        document.getElementById('sneaker-form').onsubmit = async function(event) {
+            event.preventDefault();
+
+            if (!getSneakersCollectionRef()) {
+                showModal("Error", "Database connection not ready.");
+                return;
+            }
+
+            const brand = document.getElementById('sneaker-brand').value.trim();
+            const model = document.getElementById('sneaker-model').value.trim();
+            const size = parseFloat(document.getElementById('sneaker-size').value);
+            const stock = parseInt(document.getElementById('sneaker-stock').value, 10);
+            const colorway = document.getElementById('sneaker-colorway').value.trim();
+
+            if (stock < 0) {
+                 showModal("Input Error", "Stock quantity cannot be negative.");
+                 return;
+            }
+
+            const newSneaker = {
+                brand,
+                model,
+                size,
+                stock,
+                colorway,
+                createdBy: currentUserId,
+                createdAt: new Date().toISOString(),
+            };
+
+            try {
+                await addDoc(getSneakersCollectionRef(), newSneaker);
+                console.log("New sneaker added:", newSneaker);
+                document.getElementById('sneaker-form').reset();
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showModal("Save Error", `Could not add sneaker: ${e.message}`);
+            }
+        };
+
+        /**
+         * Handles incrementing or decrementing the stock count.
+         * @param {string} id - Document ID of the sneaker.
+         * @param {number} delta - +1 for increment, -1 for decrement.
+         */
+        async function updateSneakerStock(id, delta) {
+            if (!db) {
+                showModal("Error", "Database connection not ready.");
+                return;
+            }
+            
+            // Reference to the specific document
+            const sneakerDocRef = doc(getSneakersCollectionRef(), id);
+            const stockElement = document.getElementById(`stock-count-${id}`);
+            
+            if (!stockElement) {
+                console.error("Stock count display element not found for ID:", id);
+                return;
+            }
+
+            // Get current stock from the UI (Optimistic update might be better, 
+            // but for simplicity and safety, we'll rely on the snapshot listener)
+            const currentStock = parseInt(stockElement.textContent, 10);
+            const newStock = currentStock + delta;
+
+            if (newStock < 0) {
+                showModal("Stock Error", "Stock cannot go below zero.");
+                return;
+            }
+
+            try {
+                // Update Firestore document
+                await updateDoc(sneakerDocRef, {
+                    stock: newStock,
+                });
+                console.log(`Updated stock for ${id} to ${newStock}`);
+
+                // The onSnapshot listener will re-render the list automatically
+            } catch (e) {
+                console.error("Error updating stock: ", e);
+                showModal("Update Error", `Could not update stock: ${e.message}`);
+            }
+        }
+
+        /**
+         * Handles deleting a sneaker document.
+         * @param {string} id - Document ID of the sneaker.
+         */
+        async function deleteSneaker(id) {
+            if (!db) {
+                showModal("Error", "Database connection not ready.");
+                return;
+            }
+
+            const sneakerDocRef = doc(getSneakersCollectionRef(), id);
+            
+            try {
+                await deleteDoc(sneakerDocRef);
+                console.log(`Deleted sneaker document with ID: ${id}`);
+            } catch (e) {
+                console.error("Error deleting document: ", e);
+                showModal("Deletion Error", `Could not delete sneaker: ${e.message}`);
+            }
+        }
+
+        // --- Start the application ---
+        initializeFirebase();
+
+    </script>
+</body>
+</html>
