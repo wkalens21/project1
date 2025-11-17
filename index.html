@@ -3,490 +3,802 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sneaker Inventory Manager</title>
+    <title>Duel Trials Moto Challenge (2-Player)</title>
+    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;700&display=swap');
+        
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f4f7f9;
+            background-color: #1a1a2e; /* Deep space blue */
+            color: #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            min-height: 100vh;
         }
-        /* Custom scrollbar for aesthetics */
-        .custom-scroll::-webkit-scrollbar {
-            width: 6px;
+        
+        .game-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.5rem;
+            color: #e94560; /* Neon Red Accent */
+            text-shadow: 2px 2px 0 #0f0f1a;
         }
-        .custom-scroll::-webkit-scrollbar-thumb {
-            background-color: #cbd5e1;
-            border-radius: 3px;
+
+        #game-container {
+            border: 4px solid #e94560; 
+            box-shadow: 0 0 30px rgba(233, 69, 96, 0.5); /* Neon glow */
+            max-width: 900px;
+            width: 95vw;
+            aspect-ratio: 16 / 9;
+            margin: 10px auto;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            position: relative;
         }
-        .custom-scroll::-webkit-scrollbar-track {
-            background-color: #f1f1f1;
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #2e4a6a, #1a1a2e); /* Dark gradient sky */
+        }
+        
+        .controls-card {
+            background-color: #0f0f1a;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-top: 1rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.7);
+        }
+
+        .button-style {
+            background-color: #16213e; 
+            color: #f3f4f6;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            box-shadow: 0 3px #0f0f1a;
+            transition: all 0.1s ease;
+            user-select: none;
+            cursor: pointer;
+            min-width: 80px;
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.75rem;
+        }
+        .button-style:active {
+            box-shadow: 0 0 #0f0f1a;
+            transform: translateY(3px);
+        }
+        .p1-controls .button-style {
+            background-color: #ef4444; /* Red */
+            box-shadow: 0 3px #b91c1c;
+        }
+        .p2-controls .button-style {
+            background-color: #3b82f6; /* Blue */
+            box-shadow: 0 3px #1d4ed8;
+        }
+        .status-panel {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
         }
     </style>
-</head>
-<body class="min-h-screen p-4 md:p-8">
-
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-4xl font-extrabold text-gray-800 mb-6 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" />
-            </svg>
-            Sneaker Stock Tracker
-        </h1>
-
-        <!-- Add New Sneaker Form -->
-        <div id="add-sneaker-form" class="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700">Add New Item</h2>
-            <form id="sneaker-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input type="text" id="sneaker-brand" placeholder="Brand (e.g., Nike)" required 
-                       class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                <input type="text" id="sneaker-model" placeholder="Model (e.g., Air Jordan 1)" required 
-                       class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                <input type="number" id="sneaker-size" placeholder="Size (US)" step="0.5" required 
-                       class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                <input type="number" id="sneaker-stock" placeholder="Stock Quantity" required 
-                       class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                <input type="text" id="sneaker-colorway" placeholder="Colorway (e.g., Chicago)" required 
-                       class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                <button type="submit" 
-                        class="col-span-1 md:col-span-1 p-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition duration-150 ease-in-out shadow-md">
-                    Add Sneaker
-                </button>
-            </form>
-        </div>
-
-        <!-- User Info Display -->
-        <div id="user-info" class="bg-indigo-50 p-4 rounded-xl shadow-inner mb-8 text-sm text-gray-700">
-            <p><strong>Authenticated User ID:</strong> <span id="user-id-display" class="font-mono text-xs bg-indigo-100 p-1 rounded">Loading...</span></p>
-            <p class="mt-1">
-                This inventory is stored publicly under the app ID: 
-                <span id="app-id-display" class="font-mono text-xs bg-indigo-100 p-1 rounded">Loading...</span>.
-                Anyone with this link can view and modify it.
-            </p>
-        </div>
-
-
-        <!-- Sneaker List Area -->
-        <div class="bg-white p-6 rounded-xl shadow-lg">
-            <h2 class="text-2xl font-semibold mb-4 text-gray-700">Current Inventory</h2>
-            
-            <!-- Loading State Indicator -->
-            <div id="loading-state" class="text-center py-10 transition duration-500 ease-in-out">
-                <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p class="text-gray-500">Loading inventory data...</p>
-            </div>
-
-            <!-- List Container -->
-            <div id="sneaker-list-container" class="space-y-4">
-                <!-- Sneaker items will be injected here -->
-            </div>
-
-            <!-- No Results Message -->
-            <div id="no-results" class="hidden text-center py-10 text-gray-500">
-                <p>No sneakers found in the inventory. Add one above!</p>
-            </div>
-        </div>
-        
-    </div>
-
-    <!-- Modal for Error/Confirmation Messages (replaces alert/confirm) -->
-    <div id="app-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
-            <h3 id="modal-title" class="text-lg font-bold mb-3 text-gray-800"></h3>
-            <p id="modal-message" class="text-sm text-gray-600 mb-4"></p>
-            <div id="modal-actions" class="flex justify-end space-x-2">
-                <button id="modal-confirm" class="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition hidden">Confirm</button>
-                <button id="modal-close" class="px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 transition">Close</button>
-            </div>
-        </div>
-    </div>
-
-
+    <!-- Firebase Imports -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            signInAnonymously, 
-            signInWithCustomToken, 
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            collection, 
-            onSnapshot, 
-            query, 
-            addDoc, 
-            doc, 
-            updateDoc, 
-            deleteDoc, 
-            setLogLevel 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- GLOBAL SETUP & FIREBASE INITIALIZATION ---
-
-        // Global variables provided by the Canvas environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let db = null;
-        let auth = null;
-        let currentUserId = null;
-        let isAuthReady = false;
-
-        // Set Firebase debug logging
-        setLogLevel('debug');
-        console.log("App ID:", appId);
-
-        // Utility to show custom modal (replaces alert/confirm)
-        function showModal(title, message, isConfirmation = false) {
-            const modal = document.getElementById('app-modal');
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-message').textContent = message;
-
-            const confirmBtn = document.getElementById('modal-confirm');
-            const closeBtn = document.getElementById('modal-close');
-            
-            return new Promise((resolve) => {
-                // Reset listeners and display
-                confirmBtn.onclick = null;
-                closeBtn.onclick = null;
-                confirmBtn.classList.add('hidden');
-
-                if (isConfirmation) {
-                    confirmBtn.classList.remove('hidden');
-                    confirmBtn.onclick = () => {
-                        modal.classList.add('hidden');
-                        resolve(true);
-                    };
-                    closeBtn.onclick = () => {
-                        modal.classList.add('hidden');
-                        resolve(false);
-                    };
-                } else {
-                    closeBtn.onclick = () => {
-                        modal.classList.add('hidden');
-                        resolve(true); // Resolve true for simple alerts
-                    };
-                }
-
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            });
-        }
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // --- DATA PATH & REFERENCES ---
+        // Expose Firebase utilities globally for use in the main script
+        window.firebase = {
+            initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
+            getFirestore, doc, getDoc, setDoc, collection, setLogLevel
+        };
+    </script>
+</head>
+<body class="p-4">
+
+    <header class="text-center mb-6 w-full max-w-4xl">
+        <h1 class="game-title text-xl md:text-3xl mb-2">DUEL TRIALS CHALLENGE</h1>
+        <div id="status-display" class="status-panel mt-3 bg-gray-800 p-2 rounded-lg text-xs font-mono">
+            <p id="auth-status" class="text-yellow-400">Initializing...</p>
+            <p id="high-score-status" class="text-green-400">Track Record: --</p>
+        </div>
+    </header>
+
+    <div id="game-container" class="mx-auto rounded-xl">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <!-- Controls and Challenge Info -->
+    <div class="controls-card mx-auto max-w-4xl w-full text-center">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+             <button id="btnNewTrack" class="button-style bg-purple-500 hover:bg-purple-600 shadow-purple-800/80 mb-3 md:mb-0">NEW TRACK</button>
+            <span class="text-gray-400 font-mono text-sm">CURRENT SEED: <span id="track-seed" class="text-yellow-400 font-bold"></span></span>
+            <button id="btnRestart" class="button-style bg-yellow-500 hover:bg-yellow-600 active:shadow-none shadow-yellow-800/80 mt-3 md:mt-0">RESTART (SPACE)</button>
+        </div>
         
-        /**
-         * Gets the Firestore collection reference for public data.
-         * The path is /artifacts/{appId}/public/data/sneakers
-         */
-        function getSneakersCollectionRef() {
-            if (!db) return null;
-            const path = `/artifacts/${appId}/public/data/sneakers`;
-            return collection(db, path);
-        }
-
-        // --- AUTHENTICATION HANDLER ---
-
-        async function initializeFirebase() {
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                
-                // Set up authentication state listener
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        currentUserId = user.uid;
-                        document.getElementById('user-id-display').textContent = currentUserId;
-                        document.getElementById('app-id-display').textContent = appId;
-                    } else {
-                        // This should ideally not happen after sign-in, but as a fallback
-                        document.getElementById('user-id-display').textContent = 'Guest (Sign-in Failed)';
-                        currentUserId = null;
-                    }
-                    isAuthReady = true;
-                    // Start listening for data once auth is ready
-                    setupSnapshotListener();
-                });
-
-                // Attempt custom token sign-in or anonymous sign-in
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    // Fallback to anonymous sign-in if no token is provided
-                    await signInAnonymously(auth);
-                }
-
-            } catch (error) {
-                console.error("Firebase initialization or sign-in failed:", error);
-                showModal("Initialization Error", `Failed to connect to Firebase: ${error.message}`);
-                // Ensure loading state is handled even on error
-                const loadingState = document.getElementById('loading-state');
-                if (loadingState) {
-                    loadingState.textContent = 'Failed to load data.';
-                    loadingState.classList.remove('animate-spin');
-                }
-            }
-        }
-
-
-        // --- UI RENDERING FUNCTIONS ---
-
-        /**
-         * Renders the list of sneakers into the UI.
-         * THIS IS WHERE THE NULL CHECK FIX IS APPLIED (approx line 200 in this script).
-         * @param {Array<Object>} sneakers - Array of sneaker objects from Firestore.
-         */
-        function renderSneakerList(sneakers) {
-            const listContainer = document.getElementById('sneaker-list-container');
-            
-            // --- FIX FOR Cannot read properties of null (reading 'style') ---
-            // The reported error happens when trying to access a property (like .style or .classList)
-            // on an element that does not exist (is null). We check for it here.
-            const loadingState = document.getElementById('loading-state');
-            if (loadingState) {
-                // Ensure loading state is hidden only if the element exists
-                loadingState.classList.add('hidden');
-                loadingState.style.opacity = '0';
-                loadingState.style.display = 'none'; // This line or similar was likely causing the error
-            }
-            // ------------------------------------------------------------------
-
-            if (!listContainer) {
-                console.error("Sneaker list container not found.");
-                return;
-            }
-
-            if (sneakers.length === 0) {
-                listContainer.innerHTML = '';
-                document.getElementById('no-results').classList.remove('hidden');
-                return;
-            }
-
-            document.getElementById('no-results').classList.add('hidden');
-            listContainer.innerHTML = sneakers.map(sneaker => `
-                <div id="sneaker-${sneaker.id}" class="flex flex-col md:flex-row items-start md:items-center bg-gray-50 p-4 rounded-xl shadow-sm border-l-4 border-blue-500 hover:shadow-md transition duration-150">
-                    
-                    <!-- Sneaker Details -->
-                    <div class="flex-grow mr-4 mb-3 md:mb-0">
-                        <p class="text-xl font-bold text-gray-800">${sneaker.brand} ${sneaker.model}</p>
-                        <p class="text-sm text-gray-600">Colorway: ${sneaker.colorway}</p>
-                        <p class="text-sm text-gray-600">Size: US ${sneaker.size}</p>
-                    </div>
-
-                    <!-- Stock Counter & Controls -->
-                    <div class="flex items-center space-x-3">
-                        <span class="text-lg font-semibold text-gray-900 w-12 text-right">
-                            Stock: <span id="stock-count-${sneaker.id}">${sneaker.stock}</span>
-                        </span>
-                        
-                        <button data-id="${sneaker.id}" data-action="decrement"
-                                class="stock-btn p-2 text-red-600 border border-red-600 rounded-full hover:bg-red-50 transition duration-150">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-
-                        <button data-id="${sneaker.id}" data-action="increment"
-                                class="stock-btn p-2 text-green-600 border border-green-600 rounded-full hover:bg-green-50 transition duration-150">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        
-                        <button data-id="${sneaker.id}" data-action="delete"
-                                class="delete-btn p-2 ml-4 text-gray-400 rounded-full hover:text-red-500 transition duration-150" title="Delete Item">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
-                    </div>
+        <div class="grid grid-cols-2 gap-4">
+            <!-- Player 1 Controls -->
+            <div class="p1-controls">
+                <h2 class="text-lg font-bold mb-3 text-red-400">PLAYER 1 (WASD)</h2>
+                <div class="grid grid-cols-4 gap-2">
+                    <button id="p1-leanFwd" class="button-style"><span class="text-xs">A</span></button>
+                    <button id="p1-throttle" class="button-style"><span class="text-xs">W (GAS)</span></button>
+                    <button id="p1-brake" class="button-style"><span class="text-xs">S (BRAKE)</span></button>
+                    <button id="p1-leanBack" class="button-style"><span class="text-xs">D</span></button>
                 </div>
-            `).join('');
+            </div>
+            
+            <!-- Player 2 Controls -->
+            <div class="p2-controls">
+                <h2 class="text-lg font-bold mb-3 text-blue-400">PLAYER 2 (ARROWS)</h2>
+                <div class="grid grid-cols-4 gap-2">
+                    <button id="p2-leanFwd" class="button-style"><span class="text-xs">&larr;</span></button>
+                    <button id="p2-throttle" class="button-style"><span class="text-xs">&uarr; (GAS)</span></button>
+                    <button id="p2-brake" class="button-style"><span class="text-xs">&darr; (BRAKE)</span></button>
+                    <button id="p2-leanBack" class="button-style"><span class="text-xs">&rarr;</span></button>
+                </div>
+            </div>
+        </div>
 
-            // Add event listeners after rendering
-            attachListEventListeners();
+    </div>
+    
+    <div id="messageBox" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-900 text-white p-6 rounded-lg shadow-2xl hidden font-bold text-xl md:text-3xl z-50 transition-opacity duration-300 pointer-events-none border-4 border-red-500 text-center"></div>
+
+    <script type="module">
+        // Global Firebase Instances
+        let app, db, auth, userId;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+
+        // --- GAME CONSTANTS AND INITIAL SETUP ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const messageBox = document.getElementById('messageBox');
+        const scoreStatus = document.getElementById('high-score-status');
+        const authStatus = document.getElementById('auth-status');
+        const trackSeedDisplay = document.getElementById('track-seed');
+
+        let currentSeed = 2000;
+        let bestTimeMs = Infinity;
+        const CAMERA_OFFSET = 0.3; // Keep the leading player 30% from the left edge
+
+        // Base moto structure
+        const baseMoto = {
+            // Viewport/Canvas Y position (X is calculated based on scroll)
+            x: 0, 
+            y: 0, 
+            // World X position (tracks distance traveled)
+            worldX: 0, 
+            vx: 0, vy: 0, angle: 0, angularVelocity: 0,
+            wheelRadius: 10, wheelDist: 40, mass: 1, gravity: 0.5,
+            throttlePower: 0.15, maxSpeed: 10, leanRate: 0.007,
+            angularDamping: 0.97, isFinished: false,
+            winner: false,
+            crash: false,
+            color: '' 
+        };
+
+        const moto1 = { ...baseMoto, color: '#ef4444', playerId: 1 }; // Red
+        const moto2 = { ...baseMoto, color: '#3b82f6', playerId: 2 }; // Blue
+        const players = [moto1, moto2];
+        
+        const game = {
+            scrollX: 0, // World scroll offset
+            segments: [], segmentLength: 40, maxSegments: 300, 
+            segmentSmoother: 8, gameOver: false,
+            terrainMaxHeight: 120, terrainMinHeight: 30,
+            finishLine: 0, startTime: 0, endTime: 0,
+            winnerId: null
+        };
+        
+        // Input mapping
+        const keys = { 
+            w: false, s: false, a: false, d: false, 
+            ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false 
+        };
+
+        // --- PRNG (Seeded Random Number Generator) ---
+        let seed = 1;
+        function seedRandom(s) {
+            seed = s % 2147483647;
+            if (seed <= 0) seed += 2147483646;
+        }
+        function random() {
+            seed = (seed * 16807) % 2147483647;
+            return (seed - 1) / 2147483646;
         }
 
-        /**
-         * Attaches listeners to the dynamically created increment/decrement/delete buttons.
-         */
-        function attachListEventListeners() {
-            document.querySelectorAll('.stock-btn').forEach(button => {
-                button.onclick = (event) => {
-                    event.preventDefault();
-                    const id = button.dataset.id;
-                    const action = button.dataset.action;
-                    updateSneakerStock(id, action === 'increment' ? 1 : -1);
-                };
-            });
+        // --- DYNAMIC SIZING ---
 
-            document.querySelectorAll('.delete-btn').forEach(button => {
-                button.onclick = async (event) => {
-                    event.preventDefault();
-                    const id = button.dataset.id;
-                    const confirmation = await showModal(
-                        "Confirm Deletion", 
-                        "Are you sure you want to delete this sneaker from the inventory?",
-                        true
-                    );
-                    if (confirmation) {
-                        deleteSneaker(id);
+        function resizeCanvas() {
+            const container = document.getElementById('game-container');
+            const width = container.clientWidth;
+            canvas.width = width;
+            canvas.height = width * (9 / 16);
+            
+            // Set initial Y position for the bikes
+            const startY = canvas.height * 0.7 - 50; 
+            moto1.y = startY; 
+            moto2.y = startY; 
+            
+            // Set initial world X and calculate finish line
+            const startX = 100; // Starting world X position
+            moto1.worldX = startX;
+            moto2.worldX = startX;
+            game.finishLine = (game.maxSegments - 10) * game.segmentLength;
+            game.scrollX = 0; // Reset scroll on resize
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+
+        // --- FIREBASE/HIGH SCORE LOGIC ---
+
+        async function initFirebase() {
+            authStatus.textContent = 'Authenticating...';
+            try {
+                if (firebaseConfig) {
+                    firebase.setLogLevel('error');
+                    app = firebase.initializeApp(firebaseConfig);
+                    db = firebase.getFirestore(app);
+                    auth = firebase.getAuth(app);
+                    
+                    const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                    if (token) {
+                        await firebase.signInWithCustomToken(auth, token);
+                    } else {
+                        await firebase.signInAnonymously(auth);
                     }
-                };
-            });
+                    userId = auth.currentUser?.uid || crypto.randomUUID();
+                    authStatus.textContent = `Authenticated (User ID: ${userId.substring(0, 8)}...)`;
+                    loadHighScore();
+                } else {
+                    authStatus.textContent = 'Firebase Config Missing. Scores will not be saved.';
+                }
+            } catch (error) {
+                console.error("Firebase init failed:", error);
+                authStatus.textContent = `Auth Error: ${error.message}`;
+            }
         }
 
+        async function loadHighScore() {
+            if (!db || !userId) return;
 
-        // --- FIREBASE INTERACTION FUNCTIONS ---
-
-        /**
-         * Sets up the real-time listener for the sneakers collection.
-         */
-        function setupSnapshotListener() {
-            if (!isAuthReady || !db) {
-                console.warn("Firestore not ready. Skipping snapshot listener setup.");
-                return;
+            const collectionPath = `/artifacts/${appId}/users/${userId}/duel_scores`;
+            const docRef = firebase.doc(db, collectionPath, `track_seed_${currentSeed}`);
+            scoreStatus.textContent = 'Loading Track Record...';
+            
+            try {
+                const docSnap = await firebase.getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    bestTimeMs = data.bestTimeMs || Infinity;
+                    scoreStatus.textContent = `Track Record: ${(bestTimeMs / 1000).toFixed(2)}s (P${data.winnerId})`;
+                } else {
+                    bestTimeMs = Infinity;
+                    scoreStatus.textContent = `Track Record: N/A`;
+                }
+            } catch (error) {
+                console.error("Error loading high score:", error);
+                scoreStatus.textContent = `Record Load Error.`;
             }
-
-            const q = query(getSneakersCollectionRef());
-
-            onSnapshot(q, (snapshot) => {
-                const sneakers = [];
-                snapshot.forEach((doc) => {
-                    sneakers.push({ id: doc.id, ...doc.data() });
-                });
-                console.log("New data snapshot received. Total items:", sneakers.length);
-                // Sort by brand then model for consistent rendering
-                sneakers.sort((a, b) => {
-                    if (a.brand < b.brand) return -1;
-                    if (a.brand > b.brand) return 1;
-                    if (a.model < b.model) return -1;
-                    if (a.model > b.model) return 1;
-                    return 0;
-                });
-                renderSneakerList(sneakers);
-            }, (error) => {
-                console.error("Error listening to Firestore collection:", error);
-                showModal("Data Error", `Failed to load real-time data: ${error.message}`);
-            });
         }
 
-        /**
-         * Handles adding a new sneaker to the collection.
-         */
-        document.getElementById('sneaker-form').onsubmit = async function(event) {
-            event.preventDefault();
+        async function saveHighScore(timeMs, winnerId) {
+            if (!db || !userId || timeMs >= bestTimeMs) return;
 
-            if (!getSneakersCollectionRef()) {
-                showModal("Error", "Database connection not ready.");
-                return;
-            }
-
-            const brand = document.getElementById('sneaker-brand').value.trim();
-            const model = document.getElementById('sneaker-model').value.trim();
-            const size = parseFloat(document.getElementById('sneaker-size').value);
-            const stock = parseInt(document.getElementById('sneaker-stock').value, 10);
-            const colorway = document.getElementById('sneaker-colorway').value.trim();
-
-            if (stock < 0) {
-                 showModal("Input Error", "Stock quantity cannot be negative.");
-                 return;
-            }
-
-            const newSneaker = {
-                brand,
-                model,
-                size,
-                stock,
-                colorway,
-                createdBy: currentUserId,
-                createdAt: new Date().toISOString(),
+            const collectionPath = `/artifacts/${appId}/users/${userId}/duel_scores`;
+            const docRef = firebase.doc(db, collectionPath, `track_seed_${currentSeed}`);
+            
+            const data = {
+                seed: currentSeed,
+                bestTimeMs: timeMs,
+                winnerId: winnerId,
+                timestamp: Date.now()
             };
 
             try {
-                await addDoc(getSneakersCollectionRef(), newSneaker);
-                console.log("New sneaker added:", newSneaker);
-                document.getElementById('sneaker-form').reset();
-            } catch (e) {
-                console.error("Error adding document: ", e);
-                showModal("Save Error", `Could not add sneaker: ${e.message}`);
+                await firebase.setDoc(docRef, data);
+                bestTimeMs = timeMs;
+                scoreStatus.textContent = `NEW TRACK RECORD by P${winnerId}! ${(bestTimeMs / 1000).toFixed(2)}s`;
+            } catch (error) {
+                console.error("Error saving high score:", error);
             }
-        };
+        }
 
-        /**
-         * Handles incrementing or decrementing the stock count.
-         * @param {string} id - Document ID of the sneaker.
-         * @param {number} delta - +1 for increment, -1 for decrement.
-         */
-        async function updateSneakerStock(id, delta) {
-            if (!db) {
-                showModal("Error", "Database connection not ready.");
-                return;
+
+        // --- INPUT HANDLERS ---
+
+        function handleKey(event, isDown) {
+            const key = event.key;
+            // Map arrow keys and WASD/Space/R
+            const allowedKeys = ['w', 's', 'a', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'r'];
+            if (allowedKeys.includes(key)) {
+                keys[key] = isDown;
+                event.preventDefault(); 
             }
+            if ((key === ' ' || key === 'r') && isDown && game.gameOver) {
+                resetGame(currentSeed);
+            }
+        }
+
+        window.addEventListener('keydown', (e) => handleKey(e, true));
+        window.addEventListener('keyup', (e) => handleKey(e, false));
+
+        function setupTouchControls() {
+            const controls = {
+                'p1-leanFwd': 'a', 'p1-throttle': 'w', 'p1-brake': 's', 'p1-leanBack': 'd',
+                'p2-leanFwd': 'ArrowLeft', 'p2-throttle': 'ArrowUp', 'p2-brake': 'ArrowDown', 'p2-leanBack': 'ArrowRight'
+            };
+
+            Object.keys(controls).forEach(id => {
+                const btn = document.getElementById(id);
+                const key = controls[id];
+
+                const startHandler = (e) => { e.preventDefault(); keys[key] = true; btn.classList.add('brightness-75'); };
+                const endHandler = (e) => { e.preventDefault(); keys[key] = false; btn.classList.remove('brightness-75'); };
+
+                btn.addEventListener('touchstart', startHandler);
+                btn.addEventListener('touchend', endHandler);
+                btn.addEventListener('mousedown', startHandler);
+                btn.addEventListener('mouseup', endHandler);
+            });
+
+            document.getElementById('btnRestart').addEventListener('click', () => resetGame(currentSeed));
+            document.getElementById('btnNewTrack').addEventListener('click', () => {
+                const newSeed = Math.floor(Math.random() * 100000);
+                resetGame(newSeed);
+            });
+        }
+
+        // --- TERRAIN GENERATION ---
+
+        function generateTerrain(inputSeed) {
+            seedRandom(inputSeed);
+            currentSeed = inputSeed;
+            trackSeedDisplay.textContent = currentSeed;
             
-            // Reference to the specific document
-            const sneakerDocRef = doc(getSneakersCollectionRef(), id);
-            const stockElement = document.getElementById(`stock-count-${id}`);
-            
-            if (!stockElement) {
-                console.error("Stock count display element not found for ID:", id);
-                return;
-            }
+            let segments = [];
+            let lastY = canvas.height * 0.7; 
+            let lastChange = 0; 
 
-            // Get current stock from the UI (Optimistic update might be better, 
-            // but for simplicity and safety, we'll rely on the snapshot listener)
-            const currentStock = parseInt(stockElement.textContent, 10);
-            const newStock = currentStock + delta;
+            for (let i = 0; i < game.maxSegments; i++) {
+                const maxSegmentY = canvas.height * 0.9 - game.terrainMinHeight;
+                const minSegmentY = canvas.height * 0.9 - game.terrainMaxHeight;
 
-            if (newStock < 0) {
-                showModal("Stock Error", "Stock cannot go below zero.");
-                return;
-            }
-
-            try {
-                // Update Firestore document
-                await updateDoc(sneakerDocRef, {
-                    stock: newStock,
+                let change = (random() - 0.5) * game.terrainMaxHeight / game.segmentSmoother;
+                change += lastChange * 0.7; 
+                change = Math.min(Math.max(change, -15), 15); 
+                
+                let nextY = lastY + change;
+                
+                nextY = Math.max(minSegmentY, Math.min(maxSegmentY, nextY));
+                
+                segments.push({
+                    x1: i * game.segmentLength,
+                    y1: lastY,
+                    x2: (i + 1) * game.segmentLength,
+                    y2: nextY,
                 });
-                console.log(`Updated stock for ${id} to ${newStock}`);
-
-                // The onSnapshot listener will re-render the list automatically
-            } catch (e) {
-                console.error("Error updating stock: ", e);
-                showModal("Update Error", `Could not update stock: ${e.message}`);
+                
+                lastY = nextY;
+                lastChange = change;
             }
+            game.segments = segments;
         }
 
-        /**
-         * Handles deleting a sneaker document.
-         * @param {string} id - Document ID of the sneaker.
-         */
-        async function deleteSneaker(id) {
-            if (!db) {
-                showModal("Error", "Database connection not ready.");
-                return;
-            }
+        // --- PHYSICS HELPERS ---
 
-            const sneakerDocRef = doc(getSneakersCollectionRef(), id);
+        function getGroundData(globalX) {
+            const segmentIndex = Math.floor(globalX / game.segmentLength);
+            const segment = game.segments[segmentIndex];
             
-            try {
-                await deleteDoc(sneakerDocRef);
-                console.log(`Deleted sneaker document with ID: ${id}`);
-            } catch (e) {
-                console.error("Error deleting document: ", e);
-                showModal("Deletion Error", `Could not delete sneaker: ${e.message}`);
+            if (!segment || globalX < 0 || segmentIndex >= game.segments.length) {
+                return { y: canvas.height, angle: 0 }; 
+            }
+
+            const relativeX = (globalX - segment.x1) / game.segmentLength;
+            const y = segment.y1 + (segment.y2 - segment.y1) * relativeX;
+            const angle = Math.atan2(segment.y2 - segment.y1, segment.x2 - segment.x1);
+
+            return { y, angle };
+        }
+
+        // --- GAME LOGIC ---
+        
+        function checkFinishCondition() {
+            if (game.winnerId) return;
+
+            let winner = players.find(p => p.isFinished && !p.crash);
+            
+            if (winner) {
+                game.winnerId = winner.playerId;
+                game.gameOver = true;
+                game.endTime = Date.now();
+                
+                const totalTimeMs = game.endTime - game.startTime;
+                const totalTimeSeconds = (totalTimeMs / 1000).toFixed(2);
+                
+                let message = `PLAYER ${game.winnerId} WINS! Time: ${totalTimeSeconds}s.`;
+                
+                if (totalTimeMs < bestTimeMs) {
+                    saveHighScore(totalTimeMs, game.winnerId);
+                    message += `<br>NEW TRACK RECORD!`;
+                }
+                showMessage(message, 50000);
+            }
+        }
+        
+        function updatePlayer(moto, throttleKey, brakeKey, leanFwdKey, leanBackKey) {
+            if (moto.isFinished || moto.crash || game.gameOver) return;
+            
+            // 1. Calculate Wheel Positions & Ground Data
+            const wheels = [
+                { offset: -moto.wheelDist / 2, ground: null }, // Rear
+                { offset: moto.wheelDist / 2, ground: null }  // Front
+            ];
+
+            wheels.forEach(wheel => {
+                const localX = wheel.offset * Math.cos(moto.angle);
+                const localY = wheel.offset * Math.sin(moto.angle);
+                
+                // Use moto.worldX for ground data lookup
+                const groundInfo = getGroundData(moto.worldX + localX); 
+                
+                wheel.worldY = moto.y + localY;
+                wheel.ground = groundInfo;
+            });
+            
+            // 2. Apply Forces
+            let totalAx = 0;
+            let totalAy = moto.gravity * moto.mass;
+            let totalTorque = 0;
+
+            // Apply gravity torque
+            totalTorque += -moto.gravity * moto.mass * moto.wheelDist * 0.005 * Math.sin(moto.angle);
+
+            // Manual leaning torque
+            if (keys[leanFwdKey]) { totalTorque -= moto.leanRate * moto.mass * 10; } 
+            else if (keys[leanBackKey]) { totalTorque += moto.leanRate * moto.mass * 10; }
+            
+            // 3. Collision and Driving Forces
+            wheels.forEach(wheel => {
+                const groundY = wheel.ground.y - moto.wheelRadius;
+                const groundAngle = wheel.ground.angle;
+                const depth = wheel.worldY - groundY;
+
+                if (depth > 0) {
+                    // Contact/Repulsion
+                    const repulsionForce = depth * 0.7; 
+                    totalAy -= repulsionForce;
+
+                    // Road Normal (Perpendicular to road)
+                    const roadNormalX = Math.sin(groundAngle);
+                    const roadNormalY = -Math.cos(groundAngle);
+
+                    totalAx += roadNormalX * repulsionForce * 0.5; 
+                    totalAy += roadNormalY * repulsionForce * 0.5; 
+
+                    // Drive/Brake Force (Tangent to road)
+                    let driveForce = 0;
+                    if (keys[throttleKey]) { driveForce += moto.throttlePower; } 
+                    else if (keys[brakeKey]) { driveForce -= moto.throttlePower * 1.5; } 
+                    else { driveForce -= moto.vx * 0.03; } // Rolling resistance
+
+                    const roadTangentX = Math.cos(groundAngle);
+                    const roadTangentY = Math.sin(groundAngle);
+
+                    totalAx += roadTangentX * driveForce;
+                    totalAy += roadTangentY * driveForce;
+
+                    // Torque from collision point 
+                    const torqueArm = wheel.offset;
+                    totalTorque += (repulsionForce * torqueArm) * 0.001;
+                }
+            });
+            
+            // 4. Integration
+            moto.vx += totalAx / moto.mass;
+            moto.vy += totalAy / moto.mass;
+            moto.vx *= 0.99;
+            moto.vy *= 0.99;
+            moto.vx = Math.min(Math.max(moto.vx, -moto.maxSpeed), moto.maxSpeed);
+
+            moto.angularVelocity += totalTorque / (moto.mass * 20);
+            moto.angularVelocity *= moto.angularDamping;
+            moto.angle += moto.angularVelocity;
+
+            // Update WORLD position (THIS WAS THE MISSING KEY)
+            moto.worldX += moto.vx;
+            moto.y += moto.vy;
+
+            // 5. Game Over/Crash Condition
+            const maxTiltAngle = Math.PI / 2.5;
+            if (Math.abs(moto.angle) > maxTiltAngle && moto.worldX > 100) { 
+                moto.crash = true;
+                moto.vx = 0; moto.vy = 0;
+                
+                if (moto1.crash && moto2.crash) {
+                    game.gameOver = true;
+                    showMessage(`DOUBLE CRASH! No winner. Press RESTART.`, 50000);
+                } else if (!game.winnerId) {
+                    showMessage(`P${moto.playerId} CRASHED!`, 1500);
+                }
+            }
+            
+            if (moto.worldX > game.finishLine && !moto.isFinished) {
+                moto.isFinished = true;
+                checkFinishCondition();
+            }
+        }
+        
+        function updateScroll() {
+            // Find the leading player's world X position
+            let leadingWorldX = Math.max(moto1.worldX, moto2.worldX);
+
+            // Calculate the target scroll needed to keep the leading bike at CAMERA_OFFSET (e.g., 30% from the left)
+            const targetScrollX = leadingWorldX - (canvas.width * CAMERA_OFFSET);
+            
+            // Smoothly move the camera, but ensure scrollX is never negative
+            if (targetScrollX > game.scrollX) {
+                game.scrollX = Math.max(0, game.scrollX + (targetScrollX - game.scrollX) * 0.1);
+            }
+
+            // Update both bikes' viewport X position based on the new scroll
+            moto1.x = moto1.worldX - game.scrollX;
+            moto2.x = moto2.worldX - game.scrollX;
+        }
+
+        function update() {
+            if (game.gameOver) return;
+            
+            // 1. Update Player Physics (updates worldX)
+            updatePlayer(moto1, 'w', 's', 'a', 'd');
+            updatePlayer(moto2, 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight');
+
+            // 2. Update Camera (updates scrollX and moto.x)
+            updateScroll();
+        }
+
+        // --- RENDERING ---
+
+        function drawTerrain() {
+            const roadColor = '#475569'; 
+            const dirtColor = '#374151'; 
+
+            // Draw Background (Hills)
+            ctx.fillStyle = '#6b7280'; 
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            seedRandom(currentSeed);
+            for(let i = -100; i < canvas.width + 100; i+= 100) {
+                const hillHeight = 100 + random() * 50;
+                ctx.lineTo(i, canvas.height - hillHeight);
+            }
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.fill();
+            seedRandom(currentSeed);
+            
+            // Draw the ground mass (dirt)
+            ctx.fillStyle = dirtColor;
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            for (let i = 0; i < game.segments.length; i++) {
+                const seg = game.segments[i];
+                const x1 = seg.x1 - game.scrollX;
+                const x2 = seg.x2 - game.scrollX;
+                if (x2 < 0 || x1 > canvas.width) continue;
+                ctx.lineTo(x1, seg.y1);
+            }
+            ctx.lineTo(canvas.width, canvas.height); 
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw the road surface line
+            ctx.strokeStyle = roadColor;
+            ctx.lineWidth = 6;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            let started = false;
+            for (let i = 0; i < game.segments.length; i++) {
+                const seg = game.segments[i];
+                const x1 = seg.x1 - game.scrollX;
+                const x2 = seg.x2 - game.scrollX;
+
+                if (x2 < 0 || x1 > canvas.width) continue;
+
+                if (!started) {
+                    ctx.moveTo(x1, seg.y1);
+                    started = true;
+                }
+                ctx.lineTo(x2, seg.y2);
+            }
+            ctx.stroke();
+            
+            // Draw Finish Line
+            const finishX = game.finishLine - game.scrollX;
+            if (finishX > 0 && finishX < canvas.width) {
+                ctx.strokeStyle = '#e94560'; 
+                ctx.lineWidth = 10;
+                ctx.beginPath();
+                ctx.moveTo(finishX, 0);
+                ctx.lineTo(finishX, canvas.height);
+                ctx.stroke();
+                
+                ctx.font = '30px "Press Start 2P", cursive';
+                ctx.fillStyle = '#e94560';
+                ctx.textAlign = 'center';
+                ctx.fillText('DUEL', finishX, 50);
+            }
+        }
+        
+        function drawBike(moto) {
+            ctx.save();
+            
+            // Use moto.x (viewport position) for drawing
+            ctx.translate(moto.x, moto.y); 
+            ctx.rotate(moto.angle);
+
+            const wheelOffsets = [-moto.wheelDist / 2, moto.wheelDist / 2]; 
+            const wheelColor = '#1f2937';
+            const rimColor = '#f3f4f6';
+
+            ctx.globalAlpha = moto.crash ? 0.4 : 1.0; 
+
+            // 1. Draw Wheels
+            wheelOffsets.forEach(offset => {
+                ctx.fillStyle = wheelColor;
+                ctx.beginPath();
+                ctx.arc(offset, 0, moto.wheelRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = rimColor;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(offset, 0, moto.wheelRadius * 0.5, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+            
+            // 2. Draw Chassis (Player Color Frame)
+            ctx.strokeStyle = moto.color; 
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(wheelOffsets[0], 0);
+            ctx.lineTo(wheelOffsets[1], 0);
+            ctx.stroke();
+            
+            // 3. Draw Rider/Body
+            ctx.fillStyle = moto.color; 
+            ctx.fillRect(-15, -15, 30, 10);
+            ctx.strokeStyle = rimColor;
+            ctx.strokeRect(-15, -15, 30, 10);
+            
+            // Player ID text
+            ctx.font = '10px "Press Start 2P", cursive';
+            ctx.fillStyle = rimColor;
+            ctx.textAlign = 'center';
+            ctx.fillText(`P${moto.playerId}`, 0, -5);
+
+
+            ctx.restore();
+            ctx.globalAlpha = 1.0;
+        }
+
+        let messageTimeout = null;
+        function showMessage(text, duration) {
+            messageBox.innerHTML = text;
+            messageBox.style.display = 'block';
+            messageBox.style.opacity = 1;
+            
+            if (text.includes("NEW TRACK RECORD") || text.includes("WINS")) {
+                messageBox.classList.remove('border-red-500');
+                messageBox.classList.add('border-green-500');
+            } else {
+                messageBox.classList.remove('border-green-500');
+                messageBox.classList.add('border-red-500');
+            }
+            
+            if (messageTimeout) clearTimeout(messageTimeout);
+            if (duration < 50000) { 
+                messageTimeout = setTimeout(() => {
+                    messageBox.style.opacity = 0;
+                    setTimeout(() => messageBox.style.display = 'none', 300);
+                }, duration);
             }
         }
 
-        // --- Start the application ---
-        initializeFirebase();
+        function drawHUD() {
+            const timeElapsed = game.gameOver ? (game.endTime - game.startTime) : (Date.now() - game.startTime);
+            const timeSeconds = (timeElapsed / 1000).toFixed(2);
+            
+            ctx.font = '16px "Press Start 2P", cursive';
+            ctx.textAlign = 'left';
 
+            // TIME
+            ctx.fillStyle = '#facc15'; 
+            ctx.fillText(`TIME: ${timeSeconds}s`, 10, 30);
+            
+            // P1 STATUS
+            const p1Status = moto1.isFinished ? 'FIN' : (moto1.crash ? 'CRASH' : 'RACING');
+            ctx.fillStyle = moto1.color; 
+            ctx.fillText(`P1: ${p1Status}`, 10, 60);
+
+            // P2 STATUS
+            const p2Status = moto2.isFinished ? 'FIN' : (moto2.crash ? 'CRASH' : 'RACING');
+            ctx.fillStyle = moto2.color; 
+            ctx.fillText(`P2: ${p2Status}`, 10, 90);
+
+            // WORLD PROGRESS
+            ctx.fillStyle = '#f3f4f6';
+            ctx.textAlign = 'right';
+            const progress = Math.min(100, Math.floor(Math.max(moto1.worldX, moto2.worldX) / game.finishLine * 100));
+            ctx.fillText(`PROG: ${progress}%`, canvas.width - 10, 30);
+        }
+
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawTerrain();
+            drawBike(moto2); 
+            drawBike(moto1);
+            drawHUD();
+            requestAnimationFrame(draw);
+        }
+
+        // --- GAME LOOP AND CONTROLS ---
+
+        function gameLoop() {
+            update();
+        }
+
+        function resetGame(newSeed) {
+            resizeCanvas(); 
+
+            // Reset Players
+            const startY = canvas.height * 0.7 - 50; 
+            const startX = 100;
+            
+            // Helper to deep reset the bike object
+            const resetBike = (moto) => {
+                moto.worldX = startX;
+                moto.y = startY;
+                moto.vx = 0; moto.vy = 0; moto.angle = 0; moto.angularVelocity = 0;
+                moto.isFinished = false; moto.crash = false;
+            };
+
+            resetBike(moto1);
+            resetBike(moto2);
+
+            // Reset game state
+            game.scrollX = 0;
+            game.gameOver = false;
+            game.startTime = Date.now();
+            game.winnerId = null;
+            
+            generateTerrain(newSeed); 
+            loadHighScore(); 
+
+            messageBox.style.display = 'none';
+        }
+
+        window.onload = function () {
+            resizeCanvas(); 
+            setupTouchControls();
+            
+            // Start Firebase and then the game
+            initFirebase().then(() => {
+                resetGame(currentSeed); 
+                setInterval(gameLoop, 1000 / 60); 
+                draw(); 
+            });
+            
+            showMessage("P1: WASD | P2: Arrows. First to the finish wins the duel!", 4000);
+        };
     </script>
 </body>
 </html>
